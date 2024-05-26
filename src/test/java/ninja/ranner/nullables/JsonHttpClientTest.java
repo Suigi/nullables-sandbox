@@ -11,30 +11,26 @@ class JsonHttpClientTest {
     @Nested
     class ConfiguredResponses {
 
+        record TestResponse(String socks) {}
+
         @Test
         void returnsConfiguredResponseBody() {
-            // language=JSON
-            String configuredResponseBody = """
-                    {
-                        "socks": "off"
-                    }
-                    """;
             JsonHttpClient client = JsonHttpClient.createNull(c -> c
-                    .respondWith(
+                    .responseForUrl(
                             "https://example.com",
-                            configuredResponseBody));
+                            new TestResponse("off")));
 
-            String response = client.get("https://example.com");
+            TestResponse response = client.get("https://example.com", TestResponse.class);
 
             assertThat(response)
-                    .isEqualTo(configuredResponseBody);
+                    .isEqualTo(new TestResponse("off"));
         }
 
         @Test
         void throwsNotFoundForUrlsWithoutConfiguredResponses() {
             JsonHttpClient client = JsonHttpClient.createNull();
 
-            assertThatThrownBy(() -> client.get("https://example.com/does-not-exist"))
+            assertThatThrownBy(() -> client.get("https://example.com/does-not-exist", TestResponse.class))
                     .hasMessage("404 Not Found");
         }
 
@@ -43,7 +39,7 @@ class JsonHttpClientTest {
         void throwsTimeoutException() {
             JsonHttpClient client = JsonHttpClient.createNull(c -> c.timeout());
 
-            assertThatThrownBy(() -> client.get("https://example.com"))
+            assertThatThrownBy(() -> client.get("https://example.com", TestResponse.class))
                     .hasMessage("Request timed out");
         }
     }

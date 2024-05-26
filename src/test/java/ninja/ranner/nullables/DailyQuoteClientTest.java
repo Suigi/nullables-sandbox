@@ -18,18 +18,24 @@ class DailyQuoteClientTest {
             String quote = quoteClient.fetchQuote();
 
             assertThat(quote)
-                    .isEqualTo("Default Quote");
+                    .isEqualTo("""
+                               Default Quote
+                               - Unknown""");
         }
 
         @Test
         void returnsConfiguredQuote() {
             DailyQuoteClient quoteClient = DailyQuoteClient.createNull(c -> c
-                    .quote("Make many more much smaller steps. - GeePaw Hill"));
+                    .quote(
+                            "Make many more much smaller steps.",
+                            "GeePaw Hill"));
 
             String quote = quoteClient.fetchQuote();
 
             assertThat(quote)
-                    .isEqualTo("Make many more much smaller steps. - GeePaw Hill");
+                    .isEqualTo("""
+                            Make many more much smaller steps.
+                            - GeePaw Hill""");
         }
 
         @Test

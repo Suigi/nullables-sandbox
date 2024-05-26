@@ -1,5 +1,9 @@
 package ninja.ranner.nullables;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -7,6 +11,9 @@ import java.util.function.Function;
 public class JsonHttpClient {
 
     private final Config config;
+    private static final JsonMapper jsonMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     // In a real Infrastructure Wrapper, I would pass the Config into the Embedded Stub
     // but since this wrapper does not actually make any HTTP calls, I pass in the Config directly.
@@ -14,9 +21,14 @@ public class JsonHttpClient {
         this.config = config;
     }
 
-    public String get(String url) {
+    public <T> T get(String url, Class<T> testResponseClass) {
         // Please imagine a real HTTP call here
-        return config.forUrl(url);
+        String response = config.forUrl(url);
+        try {
+            return jsonMapper.readValue(response, testResponseClass);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to parse response:\n" + response, e);
+        }
     }
 
     // ~~~ Configurable responses ~~~
@@ -39,8 +51,12 @@ public class JsonHttpClient {
             return configure.apply(new Config());
         }
 
-        public Config respondWith(String url, String resopnse) {
-            this.responsesByUrl.put(url, resopnse);
+        public Config responseForUrl(String url, Object response) {
+            try {
+                this.responsesByUrl.put(url, jsonMapper.writeValueAsString(response));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Could not serialize configured response", e);
+            }
             return this;
         }
 

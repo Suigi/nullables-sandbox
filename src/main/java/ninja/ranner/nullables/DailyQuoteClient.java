@@ -12,11 +12,14 @@ public class DailyQuoteClient {
 
     public String fetchQuote() {
         try {
-            return jsonHttpClient.get("https://example.com/quote");
+            QuoteResponse quoteResponse = jsonHttpClient.get("https://example.com/quote", QuoteResponse.class);
+            return "%s\n- %s".formatted(quoteResponse.message(), quoteResponse.author());
         } catch(Exception e) {
             throw new RuntimeException("Failed to fetch quote", e);
         }
     }
+
+    public record QuoteResponse(String message, String author) {}
 
     // ~~~ Configurable responses ~~~
 
@@ -32,10 +35,12 @@ public class DailyQuoteClient {
     public static class Config {
 
         private String configuredQuote = "Default Quote";
+        private String configuredAuthor = "Unknown";
         private boolean throwTimeout;
 
-        public Config quote(String configuredQuote) {
+        public Config quote(String configuredQuote, String author) {
             this.configuredQuote = configuredQuote;
+            this.configuredAuthor = author;
             return this;
         }
 
@@ -50,7 +55,9 @@ public class DailyQuoteClient {
                 return JsonHttpClient.createNull(c -> c.timeout());
             }
             return JsonHttpClient.createNull(c -> c
-                    .respondWith("https://example.com/quote", configuredQuote)
+                    .responseForUrl(
+                            "https://example.com/quote",
+                            new QuoteResponse(configuredQuote, configuredAuthor))
             );
         }
     }
